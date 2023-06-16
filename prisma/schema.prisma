@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid()) @map("_id")
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid()) @map("_id")
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String     @id @default(cuid()) @map("_id")
+  name          String?
+  email         String?    @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  goal          String?
+  interest      Interest[]
+  Projects      Project[]
+  projectId     String?
+  Tasks         Task[]
+  taskId        String?
+  feedback      Feedback[]
+  profession    String?
+}
+
+model Interest {
+  id     String  @id @default(cuid()) @map("_id")
+  name   String
+  User   User?   @relation(fields: [userId], references: [id])
+  userId String?
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid()) @map("_id")
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Project: prisma
+
+model Project {
+  id          String     @id @default(cuid()) @map("_id")
+  name        String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  owner       User       @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  tasks       Task[]
+  feedback    Feedback[]
+}
+
+// Task: prisma
+
+model Task {
+  id          String     @id @default(cuid()) @map("_id")
+  name        String
+  description String?
+  owner       User       @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  project     Project    @relation(fields: [projectId], references: [id])
+  projectId   String
+  feedback    Feedback[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+// Feedback: prisma
+
+model Feedback {
+  id        String   @id @default(cuid()) @map("_id")
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Project   Project? @relation(fields: [projectId], references: [id])
+  projectId String?
+  Task      Task?    @relation(fields: [taskId], references: [id])
+  taskId    String?
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+}
